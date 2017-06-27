@@ -34,20 +34,20 @@ defmodule PhoenixChannelClient.Adapters.WebsocketClient do
   end
 
   def ondisconnect({:error, :econnrefused}, state) do
-    Logger.debug "Websocket Connection Refused"
+    Logger.error "Websocket Connection Refused"
     send state.sender, {:closed, :econnrefused, self()}
     {:ok, state}
   end
 
   def ondisconnect({:error, :nxdomain}, state) do
-    Logger.debug "Websocket with non-existent domain"
+    Logger.error "Websocket with non-existent domain"
     send state.sender, {:closed, :nxdomain, self()}
     {:ok, state}
   end
 
 
   def ondisconnect({:error, {http_status, error_msg}}, state) do
-    Logger.debug "Websocket with http error #{inspect {http_status, error_msg}}"
+    Logger.error "Websocket with http error #{inspect {http_status, error_msg}}"
     send state.sender, {:closed, {http_status, error_msg}, self()}
     {:ok, state}
   end
