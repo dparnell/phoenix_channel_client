@@ -22,10 +22,14 @@ defmodule PhoenixChannelClient.Socket do
 
       #alias PhoenixChannelClient.Push
 
-      def start_link() do
+      def start_link(config) do
         Logger.debug("Socket start_link #{unquote(__MODULE__)}")
-        config = Application.get_env(@otp_app, __MODULE__)
         GenServer.start_link(PhoenixChannelClient.Socket, {unquote(__MODULE__), config}, name: __MODULE__)
+      end
+
+      def start_link() do
+        config = Application.get_env(@otp_app, __MODULE__)
+        start_link(config)
       end
 
       def push(pid, topic, event, payload) do
@@ -61,8 +65,6 @@ defmodule PhoenixChannelClient.Socket do
     reconnect_interval = opts[:reconnect_interval] || @reconnect_interval
     ws_opts = Keyword.put(opts, :sender, self())
     {:ok, pid} = adapter.open(ws_opts[:url], ws_opts)
-
-
 
     {:ok, %{
       sender: sender,
@@ -105,7 +107,7 @@ defmodule PhoenixChannelClient.Socket do
   end
 
   def handle_info({:connected, socket}, %{socket: socket} = state) do
-    Logger.debug "Connected Socket: #{inspect __MODULE__}"
+    # Logger.debug "Connected Socket: #{inspect __MODULE__}"
     :erlang.send_after(state.heartbeat_interval, self(), :heartbeat)
     {:noreply, %{state | status: :connected}}
   end
@@ -119,7 +121,7 @@ defmodule PhoenixChannelClient.Socket do
 
   # New Messages from the socket come in here
   def handle_info({:receive, %{"topic" => topic, "event" => event, "payload" => payload, "ref" => ref}} = msg, %{channels: channels} = state) do
-    Logger.debug "Socket Received: #{inspect msg}"
+    # Logger.debug "Socket Received: #{inspect msg}"
     Enum.filter(channels, fn({_channel, channel_topic}) ->
       topic == channel_topic
     end)
@@ -130,7 +132,7 @@ defmodule PhoenixChannelClient.Socket do
   end
 
   def handle_info({:closed, reason, socket}, %{socket: socket} = state) do
-    Logger.debug "Socket Closed: #{inspect reason}"
+    # Logger.debug "Socket Closed: #{inspect reason}"
     Enum.each(state.channels, fn({pid, _channel})-> send(pid, {:trigger, "phx_error", :closed, nil}) end)
     if state.reconnect == true do
       :erlang.send_after(state[:reconnect_interval], self(), :connect)
@@ -143,7 +145,7 @@ defmodule PhoenixChannelClient.Socket do
       case :queue.out(state.queue) do
         {:empty, _queue} -> state
         {{:value, push}, queue} ->
-          Logger.debug "Socket Push: #{inspect push}"
+          # Logger.debug "Socket Push: #{inspect push}"
           send(state.socket, {:send, push})
           :erlang.send_after(100, self(), :flush)
           %{state | queue: queue}

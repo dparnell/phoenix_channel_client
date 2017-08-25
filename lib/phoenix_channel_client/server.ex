@@ -9,7 +9,7 @@ defmodule PhoenixChannelClient.Server do
   end
 
   def join(pid, params \\ %{}, opts \\ []) do
-    Logger.debug "Call Join"
+    #Logger.debug "Call Join"
     timeout =  opts[:timeout] || @default_timeout
     GenServer.call(pid, {:join, params, timeout})
   end
@@ -108,7 +108,7 @@ defmodule PhoenixChannelClient.Server do
   end
 
   def handle_info(:rejoin, state) do
-    Logger.debug "Channel Rejoin"
+    #Logger.debug "Channel Rejoin"
     push = state.join_push
     state.socket.push(state.socket, push.topic, "phx_join", push.payload)
     {:noreply, %{state | state: :joining}}
